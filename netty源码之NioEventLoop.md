@@ -1,6 +1,6 @@
 ## 一、继承结构
 
-![image-20181102181729701](/Users/wangwangxiaoteng/Library/Application Support/typora-user-images/image-20181102181729701.png)
+![](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/image-20181102181729701.png)
 
 从上图可以看到，NioEventLoop实际上是一个线程池，继承了netty中的抽象类SingleThreadEventExecutor，追本逐源，而SingleThreadEventExecutor本身又是Excutor的实现类。
 
