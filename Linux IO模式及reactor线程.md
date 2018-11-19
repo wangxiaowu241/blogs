@@ -80,7 +80,7 @@ Linux的设计思想便是把一切设备都视作文件。因此，文件描述
 
 在Linux中，默认的socket都是阻塞I/O（blocking I/O）。
 
-![1593755892-55c466c2b5fc5_articlex](/Users/wangwangxiaoteng/work/code/github/blogs/1593755892-55c466c2b5fc5_articlex.png)
+![1593755892-55c466c2b5fc5_articlex](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/1593755892-55c466c2b5fc5_articlex.png)
 
 当用户进程调用了recvfrom这个系统调用方法，kernel内核就开始了IO的第一个阶段，准备数据，对于网络IO来说，很多时候数据在一开始还没完全达到，比如说没有接受到一个完整的数据包，这个时候kernel就要等待足够的数据到来。这个过程需要等待，也就是说数据被拷贝到操作系统的缓冲区的这个过程中，用户进程是主动阻塞的。当kernel中的数据准备完成了，它就会将数据从内核缓冲区拷贝到用户进程的内存中，然后kernel返回OK，用户进程解除blocking状态，才重新运行起来。
 
@@ -90,7 +90,7 @@ Linux的设计思想便是把一切设备都视作文件。因此，文件描述
 
 Linux环境下，可以设置socket为non-blocking。当一个non-blocking I/O执行读操作时，流程如下：
 
-![1505222224-55c466dda9803_articlex](/Users/wangwangxiaoteng/work/code/github/blogs/1505222224-55c466dda9803_articlex.png)
+![1505222224-55c466dda9803_articlex](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/1505222224-55c466dda9803_articlex.png)
 
 当用户发起read操作时，如果kernel中数据还未准备好，也就是第一个阶段还未完成时，它并不会block用户进程，而是会返回一个error。从用户进程角度来说，它发起一个read操作，在这个阶段它自己并没有block住，而是立刻得到了一个结果。用户进程判断结果是error时，它就知道数据还未准备完成，就可以再次发送read操作。当kernel内核进程中的数据准备完成后，而此时又收到了用户进程的read请求，那么这个时候就block用户进程，kernel将数据从内核缓冲区复制到用户进程中，然后返回OK。
 
@@ -100,7 +100,7 @@ Linux环境下，可以设置socket为non-blocking。当一个non-blocking I/O�
 
 IO multiplexing多路复用，也就是常说的event-driven IO，主要是通过select、poll、epoll函数来操作IO。select/poll/epoll的好处在于可以同时处理多个网络连接的IO。它的基本原理就是select、poll、epoll会不断轮询所负责的所有socket，当某个socket有数据准备完成了，就通知用户进程。
 
-![1903235121-55c466eb17665_articlex](/Users/wangwangxiaoteng/work/code/github/blogs/1903235121-55c466eb17665_articlex.png)
+![1903235121-55c466eb17665_articlex](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/1903235121-55c466eb17665_articlex.png)
 
 当用户进程调用selec、poll、epoll函数时，用户进程是block住的，同时kernel会负责监控所有select负责的socket，当任何一个socket中的数据准备完成了，select就会返回，这个时候用户进程就解除block，再调用read操作，kernel再将数据从内和缓冲区拷贝到用户进程。
 
@@ -142,7 +142,7 @@ IO multiplexing多路复用，也就是常说的event-driven IO，主要是通�
 
 **各个IO Model的比较如图所示：**
 
-![2109320510-55c4670795194_articlex](/Users/wangwangxiaoteng/work/code/github/blogs/2109320510-55c4670795194_articlex.png)
+![2109320510-55c4670795194_articlex](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/2109320510-55c4670795194_articlex.png)
 
 通过上面的图片，可以发现non-blocking IO和asynchronous IO的区别还是很明显的。在non-blocking IO中，虽然进程大部分时间都不会被block，但是它仍然要求进程去主动的check，并且当数据准备完成以后，也需要进程主动的再次调用recvfrom来将数据拷贝到用户内存。而asynchronous IO则完全不同。它就像是用户进程将整个IO操作交给了他人（kernel）完成，然后他人做完后发信号通知。在此期间，用户进程不需要去检查IO操作的状态，也不需要主动的去拷贝数据。
 
