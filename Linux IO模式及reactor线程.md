@@ -116,7 +116,7 @@ IO multiplexing多路复用，也就是常说的event-driven IO，主要是通�
 
 异步IO实际上用的比较少，它的基本思路是，用户进程发起read操作后，就立刻返回做其他的事情了。由kernel负责接收数据并将数据拷贝到用户进程中，拷贝完成后，kernel给用户进程发送一个system call，用户进程再处理IO。
 
-![1311869885-55c466fac00ba_articlex](/Users/wangwangxiaoteng/work/code/github/blogs/1311869885-55c466fac00ba_articlex.png)
+![1311869885-55c466fac00ba_articlex](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/1311869885-55c466fac00ba_articlex.png)
 
 **`可以看出，从用户进程角度来看，异步IO的特点是在IO的两个阶段，接收数据及数据拷贝到用户进程都是没有被block住的。`**
 
