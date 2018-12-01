@@ -156,4 +156,65 @@ IO multiplexing多路复用，也就是常说的event-driven IO，主要是通�
 
 ### 事件驱动模型（Event-Driven Architecture）
 
-在事件驱动模型中，单个线程通过select、poll、epoll等处理所负责的多个socket
+在事件驱动模型中，单个线程通过select、poll、epoll等处理所负责的多个socket连接，解决了一个线程只能处理一个线程的问题。事件驱动模型，也称作为IO多路复用，解决了java被人诟病的socket连接性能问题，但是也同时增加了开发的难度。
+
+#### 性能比较
+
+在并发量较小的时候，基于线程的模型在性能上要优于事件驱动模型，因为事件驱动模型的线程要不断的轮询其所负责的socket，并发量较少的时候性能比不上多线程+blocking IO。但是当并发量增大到一定规模时，由于线程的数量非常庞大，线程池所能同时处理的线程数有限，线程排队情况严重，基于多线程的模型达到了性能瓶颈。而事件驱动模型由于其设计本身就是用来同时处理多个连接，性能明显更好。
+
+### NIO
+
+![传统NIO模型](/Users/wangwangxiaoteng/work/code/github/blogs/传统NIO模型.png)
+
+- Acceptor向Selector注册，监听accept事件
+- 客户端发来请求，触发accept事件
+- Acceptor将客户端请求封装成channel，并将其注册到Selector，监听读写事件
+- 发生读写事件，进行相应处理
+
+##### NIO优点
+
+- 性能瓶颈高
+
+##### NIO缺点
+
+- 编码复杂
+- 模型复杂
+- 需处理半包问题
+
+##### 什么是半包问题
+
+我们知道TCP/IP在发送消息的时候，可能会拆包(如上图1)！这就导致接收端无法知道什么时候收到的数据是一个完整的数据。例如:发送端分别发送了ABC,DEF,GHI三条信息，发送时被拆成了AB,CDRFG,H,I这四个包进行发送，接受端如何将其进行还原呢？在BIO模型中，当读不到数据后会阻塞，而NIO中不会!所以需要自行进行处理!例如，以换行符作为判断依据，或者定长消息发生，或者自定义协议！
+
+### Reactor模型
+
+- Reactor：Reactor是事件的派发者
+- Acceptor：Acceptor接受client连接，建立channel及handler，并向Reactor注册channel及handler
+- handler：和client通讯的实体，一般用来处理消息的读写、编解码、字符处理等等
+
+对应上面的NIO来看
+
+- Reactor：相当于Selector
+- Acceptor：建立判断的那个分支
+- handler：处理消息读写的操作
+
+#### Reactor单线程模型
+
+![Reactor单线程模型](/Users/wangwangxiaoteng/work/code/github/blogs/Reactor单线程模型.png)
+
+Reactor单线程模型和上面的NIO模型类似，只是将处理client的读写、编解码请求放入了每个channel的handler中了。由于采用单个线程处理所有的IO请求，瓶颈显而易见，当handler处理比较耗时时，后续的client请求都会被挤压，响应较慢，所以引入了reactor多线程模型。
+
+#### Reactor多线程模型
+
+![Reactor多线程模型](/Users/wangwangxiaoteng/work/code/github/blogs/Reactor多线程模型.png)
+
+由上图可以看出，reactor多线程模型在单线程模型的基础上主要改进的地方在于引入了线程池用于处理具体的handler。将IO操作与非IO操作分开，操作IO线程的称为IO线程，操作费IO的线程称为worker线程。客户端的请求直接扔到线程池中进行处理，客户端发送请求不会被阻塞。但当用户进一步增加的时候，Reactor出现瓶颈，因为既要处理IO操作又要处理连接请求，于是引入了主从reactor模型。
+
+#### 主从Reactor多线程模型
+
+![Reactor 主从模型](/Users/wangwangxiaoteng/work/code/github/blogs/Reactor 主从模型.png)
+
+可以看出主从Reactor模型与Reactor多线程模型的区别在于将处理client的连接请求与IO分开，mainReactor负责处理client的连接请求，subReactor负责处理IO操作请求。
+
+#### 与netty对应
+
+netty中就是用了reactor线程模型。bossgroup就是对应的主reactor，workergroup对应的就是subReactor。handler就是netty中的ChannelInboundHandler或者ChannelOutboundHandler。
