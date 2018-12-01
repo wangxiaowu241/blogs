@@ -164,7 +164,7 @@ IO multiplexing多路复用，也就是常说的event-driven IO，主要是通�
 
 ### NIO
 
-![传统NIO模型](/Users/wangwangxiaoteng/work/code/github/blogs/传统NIO模型.png)
+![传统NIO模型](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/%E4%BC%A0%E7%BB%9FNIO%E6%A8%A1%E5%9E%8B.png)
 
 - Acceptor向Selector注册，监听accept事件
 - 客户端发来请求，触发accept事件
@@ -199,19 +199,19 @@ IO multiplexing多路复用，也就是常说的event-driven IO，主要是通�
 
 #### Reactor单线程模型
 
-![Reactor单线程模型](/Users/wangwangxiaoteng/work/code/github/blogs/Reactor单线程模型.png)
+![Reactor单线程模型](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/Reactor%E5%8D%95%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.png)
 
 Reactor单线程模型和上面的NIO模型类似，只是将处理client的读写、编解码请求放入了每个channel的handler中了。由于采用单个线程处理所有的IO请求，瓶颈显而易见，当handler处理比较耗时时，后续的client请求都会被挤压，响应较慢，所以引入了reactor多线程模型。
 
 #### Reactor多线程模型
 
-![Reactor多线程模型](/Users/wangwangxiaoteng/work/code/github/blogs/Reactor多线程模型.png)
+![Reactor多线程模型](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/Reactor%E5%A4%9A%E7%BA%BF%E7%A8%8B%E6%A8%A1%E5%9E%8B.png)
 
 由上图可以看出，reactor多线程模型在单线程模型的基础上主要改进的地方在于引入了线程池用于处理具体的handler。将IO操作与非IO操作分开，操作IO线程的称为IO线程，操作费IO的线程称为worker线程。客户端的请求直接扔到线程池中进行处理，客户端发送请求不会被阻塞。但当用户进一步增加的时候，Reactor出现瓶颈，因为既要处理IO操作又要处理连接请求，于是引入了主从reactor模型。
 
 #### 主从Reactor多线程模型
 
-![Reactor 主从模型](/Users/wangwangxiaoteng/work/code/github/blogs/Reactor 主从模型.png)
+![Reactor 主从模型](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/Reactor%20%E4%B8%BB%E4%BB%8E%E6%A8%A1%E5%9E%8B.png)
 
 可以看出主从Reactor模型与Reactor多线程模型的区别在于将处理client的连接请求与IO分开，mainReactor负责处理client的连接请求，subReactor负责处理IO操作请求。
 
