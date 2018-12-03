@@ -55,7 +55,7 @@ eureka:
       defaultZone: http://peer1/eureka/
 ```
 
-在本地开发时，eureka客户端最好不要注册到eureka服务端，以免其他人在开发时，其他微服务负载到你本机启动的实例中，eureka支持不注册到eureka server。
+在本地开发时，eureka客户端最好不要注册到eureka服务端，以免其他人在开发时，其他微服务负载到你本机启动的实例中，eureka支持客户端不注册到eureka server。
 
 ```yaml
 eureka:
