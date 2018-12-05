@@ -222,9 +222,10 @@ public void start() {
             //这里就是调用了EurekaServerBootstrap的contextInitialized()方法
             eurekaServerBootstrap.contextInitialized(EurekaServerInitializerConfiguration.this.servletContext);
             log.info("Started Eureka Server");
-
+			//发布eureka服务可用事件
             publish(new EurekaRegistryAvailableEvent(getEurekaServerConfig()));
             EurekaServerInitializerConfiguration.this.running = true;
+            //发布eureka服务启动事件
             publish(new EurekaServerStartedEvent(getEurekaServerConfig()));
          }
          catch (Exception ex) {
@@ -289,7 +290,7 @@ protected void initEurekaServerContext() throws Exception {
    //...
    log.info("Initialized server context");
 
-   // Copy registry from neighboring eureka node 从其他eureka节点复制实例注册信息
+   // Copy registry from neighboring eureka node 从其他eureka节点复制实例注册信息，并注册到自己上
    int registryCount = this.registry.syncUp();
     //
    this.registry.openForTraffic(this.applicationInfoManager, registryCount);
@@ -332,18 +333,25 @@ public int syncUp() {
 public void register(InstanceInfo registrant, int leaseDuration, boolean isReplication) {
     try {
         read.lock();
+        //获取相同appName的已注册实例信息，集群内的其他实例注册信息
         Map<String, Lease<InstanceInfo>> gMap = registry.get(registrant.getAppName());
         REGISTER.increment(isReplication);
         if (gMap == null) {
+            //如果是第一个注册的实例，新建一个concurrentHashMap用来存放相同appName的实例信息
             final ConcurrentHashMap<String, Lease<InstanceInfo>> gNewMap = new ConcurrentHashMap<String, Lease<InstanceInfo>>();
+            //在并发情况下，可能会有两个同时操作
             gMap = registry.putIfAbsent(registrant.getAppName(), gNewMap);
             if (gMap == null) {
+                //如果并发时，只会有一个key为appName的concurrentHashMap创建
                 gMap = gNewMap;
             }
         }
+        //获取这个map下以instanceInfo的id为key的Lease(租约)
+        //这里说明一下，registrant.getId()如果是非AWS应用，就是InstanceInfo的instanceId
         Lease<InstanceInfo> existingLease = gMap.get(registrant.getId());
         // Retain the last dirty timestamp without overwriting it, if there is already a lease
         if (existingLease != null && (existingLease.getHolder() != null)) {
+            //如果已存在相同InstanceInfo id的Lease租约，比较两者的LastDirtyTimestamp，选择最新的Lease关联的InstanceInfo
             Long existingLastDirtyTimestamp = existingLease.getHolder().getLastDirtyTimestamp();
             Long registrationLastDirtyTimestamp = registrant.getLastDirtyTimestamp();
             logger.debug("Existing lease found (existing={}, provided={}", existingLastDirtyTimestamp, registrationLastDirtyTimestamp);
@@ -357,6 +365,7 @@ public void register(InstanceInfo registrant, int leaseDuration, boolean isRepli
                 registrant = existingLease.getHolder();
             }
         } else {
+            //不存在相同instanceInfo  id的Lease租约，更新expectedNumberOfRenewsPerMin和阈值
             // The lease does not exist and hence it is a new registration
             synchronized (lock) {
                 if (this.expectedNumberOfRenewsPerMin > 0) {
@@ -370,6 +379,7 @@ public void register(InstanceInfo registrant, int leaseDuration, boolean isRepli
             }
             logger.debug("No previous lease information found; it is new registration");
         }
+        //重新构造一个Lease，并放入相同appName的map中，key为InstanceInfo的id，value为Lease本身
         Lease<InstanceInfo> lease = new Lease<InstanceInfo>(registrant, leaseDuration);
         if (existingLease != null) {
             lease.setServiceUpTimestamp(existingLease.getServiceUpTimestamp());
@@ -380,6 +390,7 @@ public void register(InstanceInfo registrant, int leaseDuration, boolean isRepli
                     System.currentTimeMillis(),
                     registrant.getAppName() + "(" + registrant.getId() + ")"));
         }
+        //更新注册实例的状态
         // This is where the initial state transfer of overridden status happens
         if (!InstanceStatus.UNKNOWN.equals(registrant.getOverriddenStatus())) {
             logger.debug("Found overridden status {} for instance {}. Checking to see if needs to be add to the "
@@ -413,4 +424,132 @@ public void register(InstanceInfo registrant, int leaseDuration, boolean isRepli
         read.unlock();
     }
 }
+```
+
+总结一下register()方法：
+
+- 从注册信息缓存map中获取以注册的实例的appName为key的实例集合map，如果没有则新建一个map
+- 从相同appName的实例map中获取以当前InstanceInfo的id的租约信息，如果有，和当前要注册的实例信息比较，选择最新的实例信息
+- 更新实例信息的状态
+
+再看一下openForTraffic()方法
+
+```java
+@Override
+public void openForTraffic(ApplicationInfoManager applicationInfoManager, int count) {
+    // Renewals happen every 30 seconds and for a minute it should be a factor of 2.
+    //计算每分钟最大续约次数
+    this.expectedNumberOfRenewsPerMin = count * 2;
+    //计算每分钟最小续约次数=最大续约次数*启动自我保护模式的百分比阈值
+    this.numberOfRenewsPerMinThreshold =
+            (int) (this.expectedNumberOfRenewsPerMin * serverConfig.getRenewalPercentThreshold());
+    logger.info("Got {} instances from neighboring DS node", count);
+    logger.info("Renew threshold is: {}", numberOfRenewsPerMinThreshold);
+    this.startupTime = System.currentTimeMillis();
+    if (count > 0) {
+        this.peerInstancesTransferEmptyOnStartup = false;
+    }
+    DataCenterInfo.Name selfName = applicationInfoManager.getInfo().getDataCenterInfo().getName();
+    boolean isAws = Name.Amazon == selfName;
+    if (isAws && serverConfig.shouldPrimeAwsReplicaConnections()) {
+        //如果是AWS亚马逊云服务，做一些兼容
+        logger.info("Priming AWS connections for all replicas..");
+        primeAwsReplicas(applicationInfoManager);
+    }
+    logger.info("Changing status to UP");
+    //更新状态
+    applicationInfoManager.setInstanceStatus(InstanceStatus.UP);
+    super.postInit();
+}
+```
+
+
+
+```java
+protected void postInit() {
+    renewsLastMin.start();
+    if (evictionTaskRef.get() != null) {
+        evictionTaskRef.get().cancel();
+    }
+    //重点在于EvictionTask.run()方法
+    evictionTaskRef.set(new EvictionTask());
+    //创建定时任务，定时清理过期的注册实例
+    evictionTimer.schedule(evictionTaskRef.get(),
+            serverConfig.getEvictionIntervalTimerInMs(),
+            serverConfig.getEvictionIntervalTimerInMs());
+}
+
+public void run() {
+            try {
+                long compensationTimeMs = getCompensationTimeMs();
+                logger.info("Running the evict task with compensationTime {}ms", compensationTimeMs);
+                //下线已过期的实例
+                evict(compensationTimeMs);
+            } catch (Throwable e) {
+                logger.error("Could not run the evict task", e);
+            }
+  }
+```
+
+到这里基本就分析完了。
+
+最后补充下，不从日志分析，如何确定启动的流程。
+
+从@EnableEurekaServer入手，发现@Import(EurekaServerMarkerConfiguration.class)，import一个配置类。
+
+```java
+/**
+ * Responsible for adding in a marker bean to activate
+ * {@link EurekaServerAutoConfiguration}
+ *
+ * @author Biju Kunjummen
+ */
+@Configuration
+public class EurekaServerMarkerConfiguration {
+
+   @Bean
+   public Marker eurekaServerMarkerBean() {
+      return new Marker();
+   }
+
+   class Marker {
+   }
+}
+```
+
+可以看到这个类link到了EurekaServerAutoConfiguration,这里声明了EurekaServerBootstrap、peerAwareInstanceRegistry等Bean。
+
+```java
+@Bean
+public PeerAwareInstanceRegistry peerAwareInstanceRegistry(
+      ServerCodecs serverCodecs) {
+   this.eurekaClient.getApplications(); // force initialization
+   return new InstanceRegistry(this.eurekaServerConfig, this.eurekaClientConfig,
+         serverCodecs, this.eurekaClient,
+         this.instanceRegistryProperties.getExpectedNumberOfRenewsPerMin(),
+         this.instanceRegistryProperties.getDefaultOpenForTrafficCount());
+}
+
+@Bean
+@ConditionalOnMissingBean
+public PeerEurekaNodes peerEurekaNodes(PeerAwareInstanceRegistry registry,
+      ServerCodecs serverCodecs) {
+   return new RefreshablePeerEurekaNodes(registry, this.eurekaServerConfig,
+         this.eurekaClientConfig, serverCodecs, this.applicationInfoManager);
+}
+
+@Bean
+	public EurekaServerContext eurekaServerContext(ServerCodecs serverCodecs,
+			PeerAwareInstanceRegistry registry, PeerEurekaNodes peerEurekaNodes) {
+		return new DefaultEurekaServerContext(this.eurekaServerConfig, serverCodecs,
+				registry, peerEurekaNodes, this.applicationInfoManager);
+	}
+
+	@Bean
+	public EurekaServerBootstrap eurekaServerBootstrap(PeerAwareInstanceRegistry registry,
+			EurekaServerContext serverContext) {
+		return new EurekaServerBootstrap(this.applicationInfoManager,
+				this.eurekaClientConfig, this.eurekaServerConfig, registry,
+				serverContext);
+	}
 ```
