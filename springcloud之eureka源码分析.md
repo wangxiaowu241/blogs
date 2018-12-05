@@ -539,17 +539,17 @@ public PeerEurekaNodes peerEurekaNodes(PeerAwareInstanceRegistry registry,
 }
 
 @Bean
-	public EurekaServerContext eurekaServerContext(ServerCodecs serverCodecs,
+public EurekaServerContext eurekaServerContext(ServerCodecs serverCodecs,
 			PeerAwareInstanceRegistry registry, PeerEurekaNodes peerEurekaNodes) {
-		return new DefaultEurekaServerContext(this.eurekaServerConfig, serverCodecs,
-				registry, peerEurekaNodes, this.applicationInfoManager);
-	}
+	return new DefaultEurekaServerContext(this.eurekaServerConfig, serverCodecs,
+	registry, peerEurekaNodes, this.applicationInfoManager);
+}
 
-	@Bean
-	public EurekaServerBootstrap eurekaServerBootstrap(PeerAwareInstanceRegistry registry,
+@Bean
+public EurekaServerBootstrap eurekaServerBootstrap(PeerAwareInstanceRegistry registry,
 			EurekaServerContext serverContext) {
-		return new EurekaServerBootstrap(this.applicationInfoManager,
-				this.eurekaClientConfig, this.eurekaServerConfig, registry,
-				serverContext);
-	}
+	return new EurekaServerBootstrap(this.applicationInfoManager,
+			this.eurekaClientConfig, this.eurekaServerConfig, registry,
+			serverContext);
+}
 ```
