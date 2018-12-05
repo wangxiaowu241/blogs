@@ -217,4 +217,4 @@ Reactor单线程模型和上面的NIO模型类似，只是将处理client的读�
 
 #### 与netty对应
 
-netty中就是用了reactor线程模型。bossgroup就是对应的主reactor，workergroup对应的就是subReactor。handler就是netty中的ChannelInboundHandler或者ChannelOutboundHandler。
+netty中就是用了reactor线程模型。bossgroup就是对应的主reactor，workergroup对应的就是subReactor。handler就是netty中的ChannelInboundHandler或者ChannelOutboundHandler。但是，netty将线程池去掉了
