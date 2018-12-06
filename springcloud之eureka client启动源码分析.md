@@ -24,7 +24,7 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 ```
 
-![image-20181206105425600](/Users/wangwangxiaoteng/work/code/github/blogs/eureka server控制台.png)
+![image-20181206105425600](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/eureka%20server%E6%8E%A7%E5%88%B6%E5%8F%B0.png)
 
 启动，可以看到eureka server控制台已经有应用的注册信息了。那么eureka client 是如何做到的呢？
 
