@@ -1,6 +1,6 @@
 ## zone&region
 
-![eureka_region_zone](/Users/wangwangxiaoteng/work/code/github/blogs/eureka_region_zone.png)
+![eureka_region_zone](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/eureka_region_zone.png)
 
 上图是eureka高可用架构，也是Netflix推荐的用法。
 
@@ -8,7 +8,7 @@
 
 那么zone和region在eureka中的概念是什么呢？
 
-![AWS_regions](/Users/wangwangxiaoteng/work/code/github/blogs/AWS_regions.png)
+![AWS_regions](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/AWS_regions.png)
 
 - region和zone其实是来自于AWS亚马逊云的概念，AWS有很多大的区域，比如说亚太区，北美区，欧洲去
 - region：区域，同一地理地区中的命名 AWS 资源集。一个区域包含至少两个可用区。
