@@ -160,7 +160,10 @@ feign:
 
 ## Feign原理简述
 
-使用@FeignClient注解的类都会在服务启动时加载到spring的beanFactory中，并为其构造一个feign client，然后service调用@FeignClient修饰的类时，就像调用service似的，直接加载feign，然后feign内部进行请求的转发等等。
+- 启动时，程序会进行包扫描，扫描所有包下所有@FeignClient注解的类，并将这些类注入到spring的IOC容器中。当定义的Feign中的接口被调用时，通过JDK的动态代理来生成RequestTemplate。
+- RequestTemplate中包含请求的所有信息，如请求参数，请求URL等。
+- RequestTemplate声场Request，然后将Request交给client处理，这个client默认是JDK的HTTPUrlConnection，也可以是OKhttp、Apache的HTTPClient等。
+- 最后client封装成LoadBaLanceClient，结合ribbon负载均衡地发起调用。
 
 详细原理请参考源码解析。
 
