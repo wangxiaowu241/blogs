@@ -163,3 +163,5 @@ feign:
 使用@FeignClient注解的类都会在服务启动时加载到spring的beanFactory中，并为其构造一个feign client，然后service调用@FeignClient修饰的类时，就像调用service似的，直接加载feign，然后feign内部进行请求的转发等等。
 
 详细原理请参考源码解析。
+
+Feign、hystrix与retry的关系请参考https://xli1224.github.io/2017/09/22/configure-feign/
