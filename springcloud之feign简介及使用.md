@@ -168,3 +168,100 @@ feign:
 详细原理请参考源码解析。
 
 Feign、hystrix与retry的关系请参考https://xli1224.github.io/2017/09/22/configure-feign/
+
+## Feign开启GZIP压缩
+
+Spring Cloud Feign支持对请求和响应进行GZIP压缩，以提高通信效率。
+
+application.yml配置信息如下：
+
+```yaml
+feign:
+  compression:
+    request: #请求
+      enabled: true #开启
+      mime-types: text/xml,application/xml,application/json #开启支持压缩的MIME TYPE
+      min-request-size: 2048 #配置压缩数据大小的下限
+    response: #响应
+      enabled: true #开启响应GZIP压缩
+```
+
+注意：
+
+由于开启GZIP压缩之后，Feign之间的调用数据通过二进制协议进行传输，返回值需要修改为ResponseEntity<byte[]>才可以正常显示，否则会导致服务之间的调用乱码。
+
+示例如下：
+
+```java
+@PostMapping("/order/{productId}")
+ResponseEntity<byte[]> addCart(@PathVariable("productId") Long productId);
+```
+
+## 作用在所有Feign Client上的配置方式
+
+方式一：通过java bean 的方式指定。
+
+@EnableFeignClients注解上有个defaultConfiguration属性，可以指定默认Feign Client的一些配置。
+
+```java
+@EnableFeignClients(defaultConfiguration = DefaultFeignConfiguration.class)
+@EnableDiscoveryClient
+@SpringBootApplication
+@EnableCircuitBreaker
+public class ProductApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ProductApplication.class, args);
+    }
+}
+```
+
+DefaultFeignConfiguration内容：
+
+```java
+@Configuration
+public class DefaultFeignConfiguration {
+
+    @Bean
+    public Retryer feignRetryer() {
+        return new Retryer.Default(1000,3000,3);
+    }
+}
+```
+
+方式二：通过配置文件方式指定。
+
+```yaml
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000 #连接超时
+        readTimeout: 5000 #读取超时
+        loggerLevel: basic #日志等级
+```
+
+## Feign Client开启日志
+
+日志配置和上述配置相同，也有两种方式。
+
+方式一：通过java bean的方式指定
+
+```java
+@Configuration
+public class DefaultFeignConfiguration {
+    @Bean
+    public Logger.Level feignLoggerLevel(){
+        return Logger.Level.BASIC;
+    }
+}
+```
+
+方式二：通过配置文件指定
+
+```yaml
+logging:
+  level:
+    com.xt.open.jmall.product.remote.feignclients.CartFeignClient: debug
+```
+
