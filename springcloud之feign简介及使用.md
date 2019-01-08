@@ -264,4 +264,3 @@ logging:
   level:
     com.xt.open.jmall.product.remote.feignclients.CartFeignClient: debug
 ```
-
