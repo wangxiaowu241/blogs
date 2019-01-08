@@ -264,3 +264,39 @@ logging:
   level:
     com.xt.open.jmall.product.remote.feignclients.CartFeignClient: debug
 ```
+
+## Feign 的GET的多参数传递
+
+目前，feign不支持GET请求直接传递POJO对象的，目前解决方法如下：
+
+1. 把POJO拆散城一个一个单独的属性放在方法参数中
+2. 把方法参数编程Map传递
+3. 使用GET传递@RequestBody，但此方式违反restful风格
+
+介绍一个最佳实践，通过feign的拦截器来实现。
+
+```java
+@Component
+@Slf4j
+public class FeignCustomRequestInteceptor implements RequestInterceptor {
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Override
+    public void apply(RequestTemplate template) {
+        if (HttpMethod.GET.toString() == template.method() && template.body() != null) {
+            //feign 不支持GET方法传输POJO 转换成json，再换成query
+            try {
+                Map<String, Collection<String>> map = objectMapper.readValue(template.bodyTemplate(), new TypeReference<Map<String, Collection<String>>>() {
+
+                });
+                template.body(null);
+                template.queries(map);
+            } catch (IOException e) {
+                log.error("cause exception", e);
+            }
+        }
+    }
+```
+
