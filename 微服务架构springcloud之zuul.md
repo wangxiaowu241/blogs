@@ -106,7 +106,7 @@ zuul:
 
 访问效果：
 
-![](/Users/wangwangxiaoteng/work/code/github/blogs/zuul-访问效果1.png)
+![](https://github.com/wangxiaowu241/blogs/blob/master/zuul-%E8%AE%BF%E9%97%AE%E6%95%88%E6%9E%9C1.png?raw=true)
 
 
 
@@ -684,7 +684,7 @@ public class ZuulServerAutoConfiguration {
 
 zuul提供的过滤器执行顺序如下：
 
-![zuul filters执行顺序](/Users/wangwangxiaoteng/work/code/github/blogs/zuul filters执行顺序.jpg)
+![zuul filters执行顺序](https://github.com/wangxiaowu241/blogs/blob/master/zuul%20filters%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F.jpg?raw=true)
 
 zuul的关键逻辑在ZuulServlet中。
 
@@ -1076,7 +1076,7 @@ FilterProcessor的route()、postRoute()、error()方法和preRoute()方法类似
 - ZuulRunner：初始化request & response，以及将zuulServlet的调用转发到FilterProcessor中去。
 - FilterProcessor：执行过滤器的核心类。
 
-![image-20190118150429728](/Users/wangwangxiaoteng/work/code/github/blogs/zuul 几种过滤器类型执行顺序.png)
+![image-20190118150429728](https://github.com/wangxiaowu241/blogs/blob/master/zuul%20%E5%87%A0%E7%A7%8D%E8%BF%87%E6%BB%A4%E5%99%A8%E7%B1%BB%E5%9E%8B%E6%89%A7%E8%A1%8C%E9%A1%BA%E5%BA%8F.png?raw=true)
 
 # 能不能有更好的方式解决这个问题
 
