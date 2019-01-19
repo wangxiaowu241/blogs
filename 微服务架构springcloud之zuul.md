@@ -209,6 +209,11 @@ ignoredPatterns：配置不走路由的某些路由匹配规则
 
 zuul本身也提供了抽象类ZuulFilter，供自定义filter。
 
+- pre：在zuul按照规则路由到下游服务之前执行，如果需要对请求进行预处理，比如鉴权、限流等，应在此类型的过滤器实现。
+- route：这类filter是zuul路由的具体执行者，是HTTPClient、OKhttp、或ribbon发送原始http请求的地方。
+- post：这类filter是下游服务返回响应信息后执行的地方，如果需要对response做一些处理，可以考虑在此类过滤器实现。
+- error：在整个生命周期类如果出现异常，则会进入此类过滤器，可作为全局异常处理。
+
 ####自定义ZuulFilter
 
 自定义ZuulFilter，需要实现几个方法，下面为前置过滤器的简单示例。
