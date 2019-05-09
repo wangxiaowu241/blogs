@@ -132,7 +132,7 @@ public abstract class Drink {
   }
 
   public void setDescription(String description) {
-    this.description += description;
+    this.description = description;
   }
 
   public BigDecimal getPrice() {
@@ -202,13 +202,26 @@ public abstract class Decorator extends Drink {
 
   private Drink drink;
 
-  public Decorator(Drink drink) {
+  private BigDecimal cost;
+
+  private String description;
+
+  public Decorator(Drink drink, String description, BigDecimal cost) {
     this.drink = drink;
+    this.description = description;
+    this.cost = cost;
   }
 
   @Override
   public BigDecimal cost() {
-    return super.getPrice().add(drink.cost());
+
+    return drink.cost().add(cost);
+  }
+
+  @Override
+  public String getDescription() {
+
+    return drink.getDescription() + "+" + description;
   }
 }
 
@@ -219,9 +232,7 @@ public abstract class Decorator extends Drink {
 public class Milk extends Decorator {
 
   public Milk(Drink drink) {
-    super(drink);
-    setPrice(BigDecimal.ONE);
-    setDescription("牛奶");
+    super(drink, "牛奶", BigDecimal.ONE);
   }
 }
 
@@ -231,9 +242,7 @@ public class Milk extends Decorator {
 public class Sugar extends Decorator {
 
   public Sugar(Drink drink) {
-    super(drink);
-    setPrice(BigDecimal.ONE);
-    setDescription("糖");
+    super(drink, "糖", BigDecimal.ONE);
   }
 }
 
@@ -246,11 +255,11 @@ public class DecoratorDesignTest {
 
     //加两份糖，一份牛奶的摩卡
     Drink firstDrink = new Sugar(new Milk(new Milk(new LatteCoffee())));
-    System.out.println(firstDrink.getDescription() + "-" + firstDrink.cost());
+    System.out.println("商品：" + firstDrink.getDescription() + " \n价格：" + firstDrink.cost());
 
     //一份糖，一份牛奶的拿铁
     Drink secondDrink = new Sugar(new Milk(new LatteCoffee()));
-    System.out.println(secondDrink.getDescription() + "-" + secondDrink.cost());
+    System.out.println("商品：" + secondDrink.getDescription() + " \n价格：" + secondDrink.cost());
   }
 }
 ```
