@@ -96,7 +96,7 @@ public static Object newProxyInstance(ClassLoader loader,
             //获取构造函数
             final Constructor<?> cons = cl.getConstructor(constructorParams);
             final InvocationHandler ih = h;
-            //根据构造函数构造出代理类
+            //根据Proxy的有参构造函数构造出代理类
             return cons.newInstance(new Object[]{h});
         } 
         //...
@@ -257,3 +257,22 @@ public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {
 
 ## 总结
 
+Proxy.newProxyInstance方法获取代理类执行过程：
+
+1. Proxy.getProxyClass0()方法获取代理类class。
+   - WeakCache.get()方法
+     - CacheKey.*valueOf*(key, refQueue)获取一级缓存key，cacheKey。
+     - ConcurrentMap.get()方法获取二级缓存ConcurrentMap。
+     - KeyFactory生成二级缓存key，subKey。
+     - ConcurrentMap.get()方法获取二级缓存value，Supplier实现类Factory。
+     - Factory不存在，则通过new Factory生成新的Factory。
+     - 通过Factory的get方法获取二级缓存值CacheValue实例。
+       - 通过Factory内部缓存ConcurrentMap.get()方法获取Supplier实例。
+       - 如果Supplier实例不存在，通过ProxyClassFactory.apply()方法生成代理类class。
+       - 使用cacheValue包装代理类class。
+
+2. Class.getConstructor(InvocationHandler.class)获取有参（InvocationHandler）构造函数。
+
+3. Constructor.newInstance(InvocationHandler)获取代理类。
+
+Proxy内部采用了多级缓存缓存生成的代理类class，避免重复生成相同的代理类，从而提高性能。
