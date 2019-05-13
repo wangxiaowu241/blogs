@@ -257,7 +257,7 @@ public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {
 
 ## 总结
 
-Proxy.newProxyInstance方法获取代理类执行过程：
+- Proxy.newProxyInstance方法获取代理类执行过程：
 
 1. Proxy.getProxyClass0()方法获取代理类class。
    - WeakCache.get()方法
@@ -276,3 +276,104 @@ Proxy.newProxyInstance方法获取代理类执行过程：
 3. Constructor.newInstance(InvocationHandler)获取代理类。
 
 Proxy内部采用了多级缓存缓存生成的代理类class，避免重复生成相同的代理类，从而提高性能。
+
+- 
+
+## 代理类class反编译后的代码
+
+注意：要想看到反编译后的class文件，需加个系统变量，**sun.misc.ProxyGenerator.saveGeneratedFile为true**，也可在**测试代码**中手动指定System.getProperties().put("sun.misc.ProxyGenerator.saveGeneratedFiles", "true");
+
+```java
+
+package com.sun.proxy;
+
+import com.xt.design.pattern.proxy.dynamic.jdk.HelloService;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.lang.reflect.UndeclaredThrowableException;
+
+public final class $Proxy0 extends Proxy implements HelloService {
+    private static Method m1;
+    private static Method m3;
+    private static Method m2;
+    private static Method m0;
+
+    public $Proxy0(InvocationHandler var1) throws  {
+        super(var1);
+    }
+
+    public final boolean equals(Object var1) throws  {
+        try {
+            return (Boolean)super.h.invoke(this, m1, new Object[]{var1});
+        } catch (RuntimeException | Error var3) {
+            throw var3;
+        } catch (Throwable var4) {
+            throw new UndeclaredThrowableException(var4);
+        }
+    }
+
+    public final void sayHello() throws  {
+        try {
+            super.h.invoke(this, m3, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    public final String toString() throws  {
+        try {
+            return (String)super.h.invoke(this, m2, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    public final int hashCode() throws  {
+        try {
+            return (Integer)super.h.invoke(this, m0, (Object[])null);
+        } catch (RuntimeException | Error var2) {
+            throw var2;
+        } catch (Throwable var3) {
+            throw new UndeclaredThrowableException(var3);
+        }
+    }
+
+    static {
+        try {
+            m1 = Class.forName("java.lang.Object").getMethod("equals", Class.forName("java.lang.Object"));
+            m3 = Class.forName("com.xt.design.pattern.proxy.dynamic.jdk.HelloService").getMethod("sayHello");
+            m2 = Class.forName("java.lang.Object").getMethod("toString");
+            m0 = Class.forName("java.lang.Object").getMethod("hashCode");
+        } catch (NoSuchMethodException var2) {
+            throw new NoSuchMethodError(var2.getMessage());
+        } catch (ClassNotFoundException var3) {
+            throw new NoClassDefFoundError(var3.getMessage());
+        }
+    }
+}
+
+```
+
+从上述生成后的代理类class文件可以看出：
+
+1. 代理类继承了Proxy类，实现了要代理类的接口
+2. 代理类和Proxy都有有参构造函数，且参数为InvocationHandler对象。
+3. 代理类调用方法都是通过InvocationHandler去调用的。
+4. 方法返回对象都是包装类型，如果原先返回的是基本数据类型，如int，会转换成包装类返回。
+
+JDK动态代理要求被代理类必须实现接口的原因是：生成的代理类要继承Proxy，Java是单继承、多实现的，所以只能通过实现接口的方式来生成代理类。
+
+但是代理类为什么要继承Proxy？？？继承Proxy只是获得了一个有参构造，从而将InvocationHandler传入，具体的调用方法都是通过InvocationHandler来的，那为什么不直接引用InvocationHandler，从而避免单继承带来的被代理类必须实现接口的限制？
+
+Stack Overflow上有人说这是标准。
+
+![1557719083635](E:\code\github\blogs\为什么jdk动态代理要继承proxy-Stack Overflow.png)
+
+个人觉得知乎上的答案可能更合理点。
+
+![1557719242263](E:\code\github\blogs\为什么jdk动态代理要继承proxy-知乎.png)
