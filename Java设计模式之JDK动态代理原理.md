@@ -275,9 +275,26 @@ public Class<?> apply(ClassLoader loader, Class<?>[] interfaces) {
 
 3. Constructor.newInstance(InvocationHandler)获取代理类。
 
+   - 代理类的包名：由被代理类实现的接口的限定修饰符确定，如果有非public修饰符，则包名为非public接口所在包路径。如果多个非public修饰符的接口，这些接口必须处于同一包中。如果全为public接口，那么包名为com.sun.proxy。
+
+   - 代理类的全路径类名：包名+代理类名前缀（$Proxy）+自增数字。
+
 Proxy内部采用了多级缓存缓存生成的代理类class，避免重复生成相同的代理类，从而提高性能。
 
-- 
+- 缓存使用的类是WeakCache。
+
+  ```java
+  //初始化
+  private static final WeakCache<ClassLoader, Class<?>[], Class<?>>
+      proxyClassCache = new WeakCache<>(new KeyFactory(), new ProxyClassFactory());
+  ```
+
+- 一级缓存的key是CacheKey，CacheKey由classloader和refQueue（引用队列）构成。
+- 一级缓存的value是ConcurrentMap<Object, Supplier<V>> 。
+
+- 二级缓存的key，subKey，由subKeyFactory（KeyFactory）工厂类根据被代理类实现的接口数量生成。
+- 二级缓存的value是Supplier的实现类，Factory。
+- 代理类class由二级缓存的get（）方法获得，最终生成代理类class的是ProxyClassFactory的apply方法，apply方法生成字节码文件后，通过调用native方法defineClass0最终生成Class。
 
 ## 代理类class反编译后的代码
 
@@ -372,8 +389,8 @@ JDK动态代理要求被代理类必须实现接口的原因是：生成的代�
 
 Stack Overflow上有人说这是标准。
 
-![1557719083635](E:\code\github\blogs\为什么jdk动态代理要继承proxy-Stack Overflow.png)
+![为什么jdk动态代理要继承proxy-Stack Overflow](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/%E4%B8%BA%E4%BB%80%E4%B9%88jdk%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E8%A6%81%E7%BB%A7%E6%89%BFproxy-Stack%20Overflow.png)
 
 个人觉得知乎上的答案可能更合理点。
 
-![1557719242263](E:\code\github\blogs\为什么jdk动态代理要继承proxy-知乎.png)
+![为什么jdk动态代理要继承proxy-知乎](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/%E4%B8%BA%E4%BB%80%E4%B9%88jdk%E5%8A%A8%E6%80%81%E4%BB%A3%E7%90%86%E8%A6%81%E7%BB%A7%E6%89%BFproxy-%E7%9F%A5%E4%B9%8E.png)
