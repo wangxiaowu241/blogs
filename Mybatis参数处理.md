@@ -45,7 +45,7 @@ public class MybatisTest {
 
 idea debug进入下一步，可以发现进入了MapperProxy的invoke方法。
 
-![1563851442449](E:\code\github\blogs\Mapper#invoke.png)
+![1563851442449](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/Mapper%23invoke.png)
 
 ```java
 @Override
@@ -159,11 +159,11 @@ public Object getNamedParams(Object[] args) {
   }
 ```
 
-![1563853878946](E:\code\github\blogs\ParamNamesResolver#getNamedParams.png)
+![1563853878946](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/ParamNamesResolver%23getNamedParams.png)
 
 可以看到ParamNameResolver.getNamedParams()方法的入参args就是mapper接口上方法值。
 
-![1563853957095](E:\code\github\blogs\names.png)
+![1563853957095](https://raw.githubusercontent.com/wangxiaowu241/blogs/master/names.png)
 
 names是一个SortedMap，内部的键值对，key为参数在接口方法中的索引位置（方法入参中的第几个参数，从0开始），value为@Param的value值（如果没有使用@Param注解，默认为arg0,arg1...）。
 
